@@ -1,0 +1,85 @@
+name: Playwright regression
+on:
+  schedule:
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Test suite to execute
+        type: choice
+        required: true
+        default: regression-e2e
+        options:
+          - smoke
+          - sanity
+          - regression
+          - e2e
+          - regression-e2e
+          - all
+      browser:
+        description: Browser project(s) to execute
+        type: choice
+        required: true
+        default: both
+        options:
+          - chromium
+          - edge
+          - both
+permissions:
+  contents: read
+concurrency:
+  group: playwright-regression-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  regression:
+    name: Selected Playwright suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      TEST_ENV: local
+      TEST_SUITE: ${{ inputs.suite || 'regression-e2e' }}
+      TEST_BROWSER: ${{ inputs.browser || 'both' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Playwright Chromium, Edge, and Linux dependencies
+        run: npx playwright install --with-deps chromium msedge
+      - name: Run selected suite and browser projects
+        shell: bash
+        run: |
+          case "$TEST_SUITE" in
+            smoke) suite_args=(--grep '@smoke') ;;
+            sanity) suite_args=(--grep '@sanity') ;;
+            regression) suite_args=(--grep '@regression') ;;
+            e2e) suite_args=(--grep '@e2e') ;;
+            regression-e2e) suite_args=(--grep '@regression|@e2e') ;;
+            all) suite_args=() ;;
+            *) echo "Unsupported suite: $TEST_SUITE"; exit 1 ;;
+          esac
+
+          case "$TEST_BROWSER" in
+            chromium) project_args=(--project=chromium) ;;
+            edge) project_args=(--project=edge) ;;
+            both) project_args=() ;;
+            *) echo "Unsupported browser selection: $TEST_BROWSER"; exit 1 ;;
+          esac
+
+          npm test -- "${suite_args[@]}" "${project_args[@]}" --workers=2
+      - name: Upload Playwright report and diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-regression-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 30
