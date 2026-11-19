@@ -139,6 +139,9 @@ GitHub Actions workflows are available under `.github/workflows`:
 
 Both workflows use the local Leap & Leash demo configuration, require no credentials, and upload
 the HTML report, JUnit results, and available failure diagnostics as workflow artifacts. Their
-console output includes per-test progress, test steps, and GitHub failure annotations. These
-workflows are separate from the Azure Pipelines definitions; adding them to Git does not run or
-configure Azure DevOps.
+console output includes the selected suite, browser, environment, worker count, per-test progress,
+test steps, and GitHub failure annotations. Each run also publishes a GitHub job summary with the
+suite and environment, total/passed/failed/flaky/skipped counts, browser-wise results, execution
+duration, and a direct artifact download link. The Playwright JSON report used to calculate counts
+is included in the artifact. These workflows are separate from the Azure Pipelines definitions;
+adding them to Git does not run or configure Azure DevOps.

@@ -6,6 +6,9 @@ const isCI = Boolean(process.env.CI);
 const terminalReporters: ReporterDescription[] = isCI
   ? [['github'], ['list', { printSteps: true }]]
   : [['list']];
+const machineReadableReporters: ReporterDescription[] = process.env.GITHUB_ACTIONS
+  ? [['json', { outputFile: 'test-results/playwright-results.json' }]]
+  : [];
 
 export default defineConfig({
   testDir: './tests',
@@ -19,6 +22,7 @@ export default defineConfig({
   },
   reporter: [
     ...terminalReporters,
+    ...machineReadableReporters,
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
   ],

@@ -38,6 +38,7 @@ jobs:
     env:
       CI: 'true'
       TEST_ENV: local
+      TEST_WORKERS: '2'
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
       TEST_SUITE: ${{ inputs.suite || 'regression-e2e' }}
       TEST_BROWSER: ${{ inputs.browser || 'both' }}
@@ -53,6 +54,12 @@ jobs:
         run: npm ci
       - name: Install Playwright Chromium, Edge, and Linux dependencies
         run: npx playwright install --with-deps chromium msedge
+      - name: Show selected test run
+        run: |
+          echo "Suite: $TEST_SUITE"
+          echo "Browser: $TEST_BROWSER"
+          echo "Environment: $TEST_ENV"
+          echo "Workers: $TEST_WORKERS"
       - name: Run selected suite and browser projects
         shell: bash
         run: |
@@ -73,10 +80,11 @@ jobs:
             *) echo "Unsupported browser selection: $TEST_BROWSER"; exit 1 ;;
           esac
 
-          npm test -- "${suite_args[@]}" "${project_args[@]}" --workers=2
+          npm test -- "${suite_args[@]}" "${project_args[@]}" --workers="$TEST_WORKERS"
       - name: Upload Playwright report and diagnostics
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
+        id: upload-report
         with:
           name: playwright-regression-${{ github.run_number }}
           path: |
@@ -84,3 +92,9 @@ jobs:
             test-results/
           if-no-files-found: warn
           retention-days: 30
+      - name: Publish test summary
+        if: always()
+        env:
+          PLAYWRIGHT_ARTIFACT_URL: ${{ steps.upload-report.outputs.artifact-url }}
+          PLAYWRIGHT_JOB_STATUS: ${{ job.status }}
+        run: node scripts/github-summary.cjs

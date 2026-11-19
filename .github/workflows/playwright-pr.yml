@@ -17,6 +17,9 @@ jobs:
     env:
       CI: 'true'
       TEST_ENV: local
+      TEST_SUITE: smoke
+      TEST_BROWSER: chromium
+      TEST_WORKERS: '2'
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
     steps:
       - name: Check out repository
@@ -36,11 +39,18 @@ jobs:
         run: npm run typecheck
       - name: Install Playwright Chromium and Linux dependencies
         run: npx playwright install --with-deps chromium
-      - name: Run Chromium smoke tests
+      - name: Show selected test run
+        run: |
+          echo "Suite: $TEST_SUITE"
+          echo "Browser: $TEST_BROWSER"
+          echo "Environment: $TEST_ENV"
+          echo "Workers: $TEST_WORKERS"
+      - name: Run Chromium smoke suite
         run: npm run test:smoke -- --project=chromium --workers=2
       - name: Upload Playwright report and diagnostics
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
+        id: upload-report
         with:
           name: playwright-pr-${{ github.run_number }}
           path: |
@@ -48,3 +58,9 @@ jobs:
             test-results/
           if-no-files-found: warn
           retention-days: 14
+      - name: Publish test summary
+        if: always()
+        env:
+          PLAYWRIGHT_ARTIFACT_URL: ${{ steps.upload-report.outputs.artifact-url }}
+          PLAYWRIGHT_JOB_STATUS: ${{ job.status }}
+        run: node scripts/github-summary.cjs
