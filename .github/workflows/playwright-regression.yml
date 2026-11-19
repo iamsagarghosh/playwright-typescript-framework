@@ -38,6 +38,7 @@ jobs:
     env:
       CI: 'true'
       TEST_ENV: local
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
       TEST_SUITE: ${{ inputs.suite || 'regression-e2e' }}
       TEST_BROWSER: ${{ inputs.browser || 'both' }}
     steps:
