@@ -17,6 +17,7 @@ jobs:
     env:
       CI: 'true'
       TEST_ENV: local
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
