@@ -44,9 +44,9 @@ jobs:
       TEST_BROWSER: ${{ inputs.browser || 'both' }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - name: Set up Node.js 24
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24
           cache: npm
@@ -83,7 +83,7 @@ jobs:
           npm test -- "${suite_args[@]}" "${project_args[@]}" --workers="$TEST_WORKERS"
       - name: Upload Playwright report and diagnostics
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         id: upload-report
         with:
           name: playwright-regression-${{ github.run_number }}

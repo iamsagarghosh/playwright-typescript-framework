@@ -19,15 +19,20 @@ npm run browsers:install
 ```
 
 For local execution, the environment defaults to the Leap & Leash demo. QA, staging, and UAT require
-an explicit `BASE_URL`. Do not place production credentials or personal account information in
+an explicit `BASE_URL` and an exact hostname in `ALLOWED_BASE_URL_HOSTS`. Do not place production credentials or personal account information in
 `.env`. The Playwright browser binaries are stored in the ignored `.playwright-browsers` folder by
 the project CLI wrapper, so install and test commands use the same browser location on Windows and
 CI agents.
 
 ## Environment and test data
 
-`TEST_ENV` accepts `local`, `qa`, `staging`, or `uat`. Local defaults to the Leap & Leash demo URL;
-the other environments require an explicit authorized `BASE_URL`. `getTestCredentials()` reads
+`TEST_ENV` accepts `local`, `qa`, `staging`, or `uat`. Local defaults to the Leap & Leash demo URL
+and permits loopback hosts for local applications. Any other local override, and every QA, staging,
+or UAT URL, must match an exact hostname in the comma-separated `ALLOWED_BASE_URL_HOSTS` setting.
+Matching is case-insensitive; wildcard and suffix matching are not supported. For example:
+`ALLOWED_BASE_URL_HOSTS=shop.qa.example.test,store.staging.example.test`. This guard prevents an
+unreviewed `BASE_URL` change from silently targeting a production site. Only add hostnames for
+approved test systems. `getTestCredentials()` reads
 `TEST_USERNAME` and `TEST_PASSWORD` only when an authentication workflow requests them, and never
 logs those values.
 
@@ -114,7 +119,8 @@ The repository contains pipeline YAML prepared for later Azure DevOps registrati
 These files do not create or run Azure DevOps pipelines by themselves. The GitHub repository must be
 connected when the pipelines are registered. For QA, staging, or UAT manual runs, add the matching
 `playwright-qa`, `playwright-staging`, or `playwright-uat` variable group with an authorized
-`BASE_URL`, and add the corresponding `test-data/<environment>.json` file. Local demo execution
+`BASE_URL` and its exact hostname in `ALLOWED_BASE_URL_HOSTS`, and add the corresponding
+`test-data/<environment>.json` file. Local demo execution
 needs no credentials. No production or authentication workflow is configured.
 
 ## Milestones
@@ -145,3 +151,7 @@ suite and environment, total/passed/failed/flaky/skipped counts, browser-wise re
 duration, and a direct artifact download link. The Playwright JSON report used to calculate counts
 is included in the artifact. These workflows are separate from the Azure Pipelines definitions;
 adding them to Git does not run or configure Azure DevOps.
+
+Workflow actions are pinned to full commit SHAs. Dependabot checks the npm lockfile and GitHub
+Actions references weekly and opens update pull requests. CI installs npm packages with `npm ci`,
+which honors the committed `package-lock.json` instead of resolving new versions during a run.

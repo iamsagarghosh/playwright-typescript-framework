@@ -32,7 +32,20 @@ function resolveEnvironmentName(value: string | undefined): EnvironmentName {
   return normalizedValue;
 }
 
-function resolveBaseUrl(name: EnvironmentName, configuredBaseUrl: string | undefined): string {
+function parseAllowedHosts(value: string | undefined): Set<string> {
+  return new Set(
+    (value ?? '')
+      .split(',')
+      .map((host) => host.trim().toLowerCase().replace(/\.$/, ''))
+      .filter(Boolean),
+  );
+}
+
+function resolveBaseUrl(
+  name: EnvironmentName,
+  configuredBaseUrl: string | undefined,
+  configuredAllowedHosts: string | undefined,
+): string {
   const baseUrl = configuredBaseUrl?.trim() || (name === 'local' ? localDemoBaseUrl : undefined);
 
   if (!baseUrl) {
@@ -51,11 +64,29 @@ function resolveBaseUrl(name: EnvironmentName, configuredBaseUrl: string | undef
     throw new Error('BASE_URL must use HTTP or HTTPS.');
   }
 
+  const hostname = parsedUrl.hostname.toLowerCase().replace(/\.$/, '');
+  const allowedHosts = parseAllowedHosts(configuredAllowedHosts);
+  const localHosts = new Set(['demoapps.leapwork.ai', 'localhost', '127.0.0.1', '[::1]']);
+  const isAllowed =
+    name === 'local'
+      ? localHosts.has(hostname) || allowedHosts.has(hostname)
+      : allowedHosts.has(hostname);
+
+  if (!isAllowed) {
+    const requirement =
+      name === 'local'
+        ? 'Use the approved Leap & Leash demo or a loopback URL, or explicitly allow a local test host.'
+        : `Add the approved test hostname to ALLOWED_BASE_URL_HOSTS for TEST_ENV="${name}".`;
+    throw new Error(
+      `BASE_URL host "${hostname}" is not approved for TEST_ENV="${name}". ${requirement} Host entries must be exact hostnames; wildcards are not supported.`,
+    );
+  }
+
   return parsedUrl.toString();
 }
 
 const name = resolveEnvironmentName(process.env.TEST_ENV);
-const baseUrl = resolveBaseUrl(name, process.env.BASE_URL);
+const baseUrl = resolveBaseUrl(name, process.env.BASE_URL, process.env.ALLOWED_BASE_URL_HOSTS);
 
 export const environment: EnvironmentConfig = Object.freeze({ name, baseUrl });
 

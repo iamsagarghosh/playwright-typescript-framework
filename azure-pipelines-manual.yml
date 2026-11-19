@@ -74,6 +74,7 @@ steps:
         $browser = '${{ parameters.browser }}'
         $suite = '${{ parameters.suite }}'
         $baseUrl = $env:BASE_URL
+        $allowedBaseUrlHosts = $env:ALLOWED_BASE_URL_HOSTS
 
         if ($baseUrl -match '^\$\([A-Za-z_][A-Za-z0-9_]*\)$') {
           $baseUrl = ''
@@ -81,6 +82,7 @@ steps:
 
         $env:TEST_ENV = $testEnvironment
         $env:BASE_URL = $baseUrl
+        $env:ALLOWED_BASE_URL_HOSTS = $allowedBaseUrlHosts
 
         $testDataPath = Join-Path 'test-data' "$testEnvironment.json"
         if (-not (Test-Path -LiteralPath $testDataPath)) {
@@ -89,6 +91,10 @@ steps:
 
         if ($testEnvironment -ne 'local' -and [string]::IsNullOrWhiteSpace($baseUrl)) {
           throw "Set BASE_URL in the playwright-$testEnvironment variable group before running this environment."
+        }
+
+        if ($testEnvironment -ne 'local' -and [string]::IsNullOrWhiteSpace($allowedBaseUrlHosts)) {
+          throw "Set ALLOWED_BASE_URL_HOSTS to the exact approved test hostname in the playwright-$testEnvironment variable group."
         }
 
         $playwrightArgs = @('scripts/playwright-cli.cjs', 'test')
@@ -109,6 +115,7 @@ steps:
         }
     env:
       BASE_URL: $(BASE_URL)
+      ALLOWED_BASE_URL_HOSTS: $(ALLOWED_BASE_URL_HOSTS)
 
   - task: PublishTestResults@2
     displayName: Publish JUnit test results
