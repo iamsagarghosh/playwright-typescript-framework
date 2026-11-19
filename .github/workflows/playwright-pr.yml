@@ -12,7 +12,7 @@ concurrency:
 jobs:
   validate:
     name: Quality checks and Chromium smoke
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 20
     env:
       CI: 'true'
@@ -37,8 +37,8 @@ jobs:
         run: npm run format:check
       - name: Check strict TypeScript compilation
         run: npm run typecheck
-      - name: Install Playwright Chromium and Linux dependencies
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
       - name: Show selected test run
         run: |
           echo "Test suite: $TEST_SUITE"

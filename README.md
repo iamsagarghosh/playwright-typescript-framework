@@ -139,7 +139,8 @@ needs no credentials. No production or authentication workflow is configured.
 
 ## GitHub Actions
 
-GitHub Actions workflows are available under `.github/workflows`:
+GitHub Actions workflows are available under `.github/workflows` and run on `windows-latest`,
+matching the local Windows development environment:
 
 - `playwright-pr.yml` runs lint, formatting, TypeScript checks, and Chromium smoke tests on pushes to `main` and pull requests targeting `main`.
 - `playwright-regression.yml` runs the Regression + E2E suites daily in Chromium and Microsoft Edge. Manual runs can select friendly suite and browser labels. The Actions run name reflects the selected suite and browser, with scheduled runs labeled separately.

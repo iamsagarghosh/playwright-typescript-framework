@@ -37,7 +37,7 @@ concurrency:
 jobs:
   regression:
     name: Selected Playwright suite
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 45
     env:
       CI: 'true'
@@ -56,8 +56,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Install Playwright Chromium, Edge, and Linux dependencies
-        run: npx playwright install --with-deps chromium msedge
+      - name: Install Playwright Chromium and Microsoft Edge
+        run: npx playwright install chromium msedge
       - name: Show selected test run
         run: |
           echo "Test suite: $TEST_SUITE"
