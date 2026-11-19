@@ -10,6 +10,11 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: deps
+    groups:
+      eslint-toolchain:
+        patterns:
+          - eslint
+          - '@eslint/js'
 
   - package-ecosystem: github-actions
     directory: /
