@@ -1,0 +1,67 @@
+trigger: none
+pr: none
+
+schedules:
+  - cron: '0 20 * * *'
+    displayName: Nightly UI regression (01:30 IST)
+    branches:
+      include:
+        - main
+    always: true
+
+pool:
+  vmImage: windows-latest
+
+variables:
+  CI: 'true'
+  TEST_ENV: local
+
+steps:
+  - task: UseNode@1
+    displayName: Use Node.js 24 LTS
+    inputs:
+      versionSource: spec
+      version: 24.x
+
+  - script: npm ci
+    displayName: Install locked npm dependencies
+
+  - script: npm run browsers:install:all
+    displayName: Install Playwright Chromium and Microsoft Edge
+
+  - script: npm test -- --grep "@regression|@e2e" --workers=2
+    displayName: Run regression and critical E2E tests in Chromium and Edge
+
+  - task: PublishTestResults@2
+    displayName: Publish JUnit test results
+    condition: always()
+    inputs:
+      testResultsFormat: JUnit
+      testResultsFiles: test-results/junit.xml
+      searchFolder: $(System.DefaultWorkingDirectory)
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+      failTaskOnMissingResultsFile: false
+      testRunTitle: Scheduled regression - Chromium and Edge - $(Build.BuildNumber)
+
+  - task: PowerShell@2
+    displayName: Stage Playwright reports and diagnostics
+    condition: always()
+    inputs:
+      targetType: inline
+      script: |
+        $artifactRoot = Join-Path $env:BUILD_ARTIFACTSTAGINGDIRECTORY 'playwright'
+        New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
+
+        foreach ($source in @('playwright-report', 'test-results')) {
+          if (Test-Path $source) {
+            Copy-Item -Path $source -Destination $artifactRoot -Recurse -Force
+          }
+        }
+
+  - task: PublishPipelineArtifact@1
+    displayName: Publish HTML report and failure artifacts
+    condition: always()
+    inputs:
+      targetPath: $(Build.ArtifactStagingDirectory)/playwright
+      artifact: scheduled-regression-diagnostics

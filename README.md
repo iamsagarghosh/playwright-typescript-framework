@@ -89,6 +89,22 @@ The trace viewer includes the action timeline, DOM snapshots, network activity, 
 The same failed-test folder contains the screenshot and retained video when available. Report and
 artifact directories are ignored by Git; publish them from CI as test results and pipeline artifacts.
 
+## Azure Pipelines definitions
+
+The repository contains pipeline YAML prepared for later Azure DevOps registration:
+
+- `azure-pipelines-pr.yml`: GitHub pull request validation on `main`, with lint, formatting,
+  TypeScript checks, Chromium smoke tests, JUnit results, and Playwright artifacts.
+- `azure-pipelines-regression.yml`: daily regression and E2E runs in Chromium and Edge at 20:00 UTC
+  (01:30 India Standard Time), with JUnit results and Playwright artifacts.
+- `azure-pipelines-manual.yml`: manually selected environment, browser, and suite.
+
+These files do not create or run Azure DevOps pipelines by themselves. The GitHub repository must be
+connected when the pipelines are registered. For QA, staging, or UAT manual runs, add the matching
+`playwright-qa`, `playwright-staging`, or `playwright-uat` variable group with an authorized
+`BASE_URL`, and add the corresponding `test-data/<environment>.json` file. Local demo execution
+needs no credentials. No production or authentication workflow is configured.
+
 ## Milestones
 
 - M1: Windows environment verification

@@ -1,0 +1,72 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: windows-latest
+
+variables:
+  CI: 'true'
+  TEST_ENV: local
+
+steps:
+  - task: UseNode@1
+    displayName: Use Node.js 24 LTS
+    inputs:
+      versionSource: spec
+      version: 24.x
+
+  - script: npm ci
+    displayName: Install locked npm dependencies
+
+  - script: npm run lint
+    displayName: Run ESLint
+
+  - script: npm run format:check
+    displayName: Check Prettier formatting
+
+  - script: npm run typecheck
+    displayName: Check strict TypeScript compilation
+
+  - script: npm run browsers:install
+    displayName: Install Playwright Chromium
+
+  - script: npm run test:smoke -- --project=chromium --workers=2
+    displayName: Run Chromium smoke tests
+
+  - task: PublishTestResults@2
+    displayName: Publish JUnit test results
+    condition: always()
+    inputs:
+      testResultsFormat: JUnit
+      testResultsFiles: test-results/junit.xml
+      searchFolder: $(System.DefaultWorkingDirectory)
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+      failTaskOnMissingResultsFile: false
+      testRunTitle: PR validation - Chromium - $(Build.BuildNumber)
+
+  - task: PowerShell@2
+    displayName: Stage Playwright reports and diagnostics
+    condition: always()
+    inputs:
+      targetType: inline
+      script: |
+        $artifactRoot = Join-Path $env:BUILD_ARTIFACTSTAGINGDIRECTORY 'playwright'
+        New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
+
+        foreach ($source in @('playwright-report', 'test-results')) {
+          if (Test-Path $source) {
+            Copy-Item -Path $source -Destination $artifactRoot -Recurse -Force
+          }
+        }
+
+  - task: PublishPipelineArtifact@1
+    displayName: Publish HTML report and failure artifacts
+    condition: always()
+    inputs:
+      targetPath: $(Build.ArtifactStagingDirectory)/playwright
+      artifact: pr-validation-diagnostics

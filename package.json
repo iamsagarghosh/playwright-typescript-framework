@@ -12,6 +12,8 @@
     "test:e2e": "node scripts/playwright-cli.cjs test --grep @e2e",
     "test:chromium": "node scripts/playwright-cli.cjs test --project=chromium",
     "test:edge": "node scripts/playwright-cli.cjs test --project=edge",
+    "browsers:install:edge": "node scripts/playwright-cli.cjs install msedge",
+    "browsers:install:all": "node scripts/playwright-cli.cjs install chromium msedge",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

@@ -1,0 +1,145 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: testEnvironment
+    displayName: Test environment
+    type: string
+    default: local
+    values:
+      - local
+      - qa
+      - staging
+      - uat
+  - name: browser
+    displayName: Browser
+    type: string
+    default: chromium
+    values:
+      - chromium
+      - edge
+      - all
+  - name: suite
+    displayName: Test suite
+    type: string
+    default: smoke
+    values:
+      - smoke
+      - sanity
+      - regression
+      - e2e
+      - all
+
+pool:
+  vmImage: windows-latest
+
+variables:
+  - name: CI
+    value: 'true'
+  - ${{ if eq(parameters.testEnvironment, 'qa') }}:
+      - group: playwright-qa
+  - ${{ if eq(parameters.testEnvironment, 'staging') }}:
+      - group: playwright-staging
+  - ${{ if eq(parameters.testEnvironment, 'uat') }}:
+      - group: playwright-uat
+
+steps:
+  - task: UseNode@1
+    displayName: Use Node.js 24 LTS
+    inputs:
+      versionSource: spec
+      version: 24.x
+
+  - script: npm ci
+    displayName: Install locked npm dependencies
+
+  - script: npm run browsers:install
+    displayName: Install Playwright Chromium
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'chromium'))
+
+  - script: npm run browsers:install:edge
+    displayName: Install Microsoft Edge
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'edge'))
+
+  - script: npm run browsers:install:all
+    displayName: Install Playwright Chromium and Microsoft Edge
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'all'))
+
+  - task: PowerShell@2
+    displayName: Run selected UI test suite
+    inputs:
+      targetType: inline
+      script: |
+        $testEnvironment = '${{ parameters.testEnvironment }}'
+        $browser = '${{ parameters.browser }}'
+        $suite = '${{ parameters.suite }}'
+        $baseUrl = $env:BASE_URL
+
+        if ($baseUrl -match '^\$\([A-Za-z_][A-Za-z0-9_]*\)$') {
+          $baseUrl = ''
+        }
+
+        $env:TEST_ENV = $testEnvironment
+        $env:BASE_URL = $baseUrl
+
+        $testDataPath = Join-Path 'test-data' "$testEnvironment.json"
+        if (-not (Test-Path -LiteralPath $testDataPath)) {
+          throw "Missing environment test data: $testDataPath. Add an approved dataset before running this environment."
+        }
+
+        if ($testEnvironment -ne 'local' -and [string]::IsNullOrWhiteSpace($baseUrl)) {
+          throw "Set BASE_URL in the playwright-$testEnvironment variable group before running this environment."
+        }
+
+        $playwrightArgs = @('scripts/playwright-cli.cjs', 'test')
+
+        if ($browser -ne 'all') {
+          $playwrightArgs += "--project=$browser"
+        }
+
+        if ($suite -ne 'all') {
+          $playwrightArgs += @('--grep', "@$suite")
+        }
+
+        $playwrightArgs += '--workers=2'
+        & node @playwrightArgs
+
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
+    env:
+      BASE_URL: $(BASE_URL)
+
+  - task: PublishTestResults@2
+    displayName: Publish JUnit test results
+    condition: always()
+    inputs:
+      testResultsFormat: JUnit
+      testResultsFiles: test-results/junit.xml
+      searchFolder: $(System.DefaultWorkingDirectory)
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+      failTaskOnMissingResultsFile: false
+      testRunTitle: Manual UI run - ${{ parameters.testEnvironment }} - ${{ parameters.browser }} - $(Build.BuildNumber)
+
+  - task: PowerShell@2
+    displayName: Stage Playwright reports and diagnostics
+    condition: always()
+    inputs:
+      targetType: inline
+      script: |
+        $artifactRoot = Join-Path $env:BUILD_ARTIFACTSTAGINGDIRECTORY 'playwright'
+        New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
+
+        foreach ($source in @('playwright-report', 'test-results')) {
+          if (Test-Path $source) {
+            Copy-Item -Path $source -Destination $artifactRoot -Recurse -Force
+          }
+        }
+
+  - task: PublishPipelineArtifact@1
+    displayName: Publish HTML report and failure artifacts
+    condition: always()
+    inputs:
+      targetPath: $(Build.ArtifactStagingDirectory)/playwright
+      artifact: manual-run-diagnostics
