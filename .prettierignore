@@ -1,0 +1,9 @@
+node_modules/
+.npm-cache/
+.playwright-browsers/
+work/
+test-results/
+playwright-report/
+dist/
+coverage/
+package-lock.json

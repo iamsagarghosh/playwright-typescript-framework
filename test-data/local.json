@@ -1,0 +1,13 @@
+{
+  "productSearch": {
+    "query": "chicken",
+    "expectedProduct": "Leap & Leash Chicken Kibble",
+    "excludedProduct": "Window Perch Cat Tree"
+  },
+  "cart": {
+    "productName": "Tough Loop Rope Toy",
+    "unitPrice": "$14.00",
+    "doubleQuantitySubtotal": "$28.00",
+    "totalWithShipping": "$18.99"
+  }
+}
