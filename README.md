@@ -54,7 +54,7 @@ npm run typecheck
 ```
 
 Run all configured browser projects with `npm test`. To select one browser, use `npm run
-test:chromium` or `npm run test:edge`. The Edge project uses the installed Microsoft Edge browser.
+test:chromium` or `npm run test:edge`. The Microsoft Edge project uses the installed Edge browser.
 Tests can also be filtered by suite:
 
 ```powershell
@@ -113,7 +113,7 @@ The repository contains pipeline YAML prepared for later Azure DevOps registrati
 
 - `azure-pipelines-pr.yml`: GitHub pull request validation on `main`, with lint, formatting,
   TypeScript checks, Chromium smoke tests, JUnit results, and Playwright artifacts.
-- `azure-pipelines-regression.yml`: daily regression and E2E runs in Chromium and Edge at 20:00 UTC
+- `azure-pipelines-regression.yml`: daily regression and E2E runs in Chromium and Microsoft Edge at 20:00 UTC
   (01:30 India Standard Time), with JUnit results and Playwright artifacts.
 - `azure-pipelines-manual.yml`: manually selected environment, browser, and suite.
 
@@ -142,15 +142,17 @@ needs no credentials. No production or authentication workflow is configured.
 GitHub Actions workflows are available under `.github/workflows`:
 
 - `playwright-pr.yml` runs lint, formatting, TypeScript checks, and Chromium smoke tests on pushes to `main` and pull requests targeting `main`.
-- `playwright-regression.yml` runs the regression and E2E suites daily in Chromium and Edge. It can also be started manually with a selected suite and browser project.
+- `playwright-regression.yml` runs the Regression + E2E suites daily in Chromium and Microsoft Edge. Manual runs can select friendly suite and browser labels. The Actions run name reflects the selected suite and browser, with scheduled runs labeled separately.
 
 Both workflows use the local Leap & Leash demo configuration, require no credentials, and upload
 the HTML report, JUnit results, and available failure diagnostics as workflow artifacts. The HTML
 report title identifies the suite, selected browser project(s), environment, and GitHub run number.
+Test titles describe the user-visible outcome, while suite tags remain separate labels for filtering.
 Console output includes the selected suite, browser, environment, worker count, per-test progress,
 test steps, and GitHub failure annotations. Each run also publishes a GitHub job summary with run
 link, workflow, event, branch, commit, suite and environment, total/passed/failed/flaky/skipped
-counts, browser-wise results, execution duration, and an artifact link when one is available. The
+counts, browser-wise results, execution duration, and an artifact link when one is available. Summary
+headings and browser names use reader-friendly labels. The
 Playwright JSON report used to calculate counts is included in the artifact. These workflows are
 separate from the Azure Pipelines definitions;
 adding them to Git does not run or configure Azure DevOps.

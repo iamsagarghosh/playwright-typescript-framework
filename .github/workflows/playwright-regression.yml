@@ -1,30 +1,34 @@
 name: Playwright regression
+run-name: >-
+  ${{ github.event_name == 'schedule' && 'Scheduled regression' || 'Manual regression' }} /
+  ${{ inputs.suite || 'Regression + E2E' }} /
+  ${{ inputs.browser || 'Chromium + Microsoft Edge' }}
 on:
   schedule:
     - cron: '0 20 * * *'
   workflow_dispatch:
     inputs:
       suite:
-        description: Test suite to execute
+        description: Select the test suite to execute
         type: choice
         required: true
-        default: regression-e2e
+        default: Regression + E2E
         options:
-          - smoke
-          - sanity
-          - regression
-          - e2e
-          - regression-e2e
-          - all
+          - Smoke
+          - Sanity
+          - Regression
+          - End-to-end
+          - Regression + E2E
+          - All suites
       browser:
-        description: Browser project(s) to execute
+        description: Select the browser project(s) to execute
         type: choice
         required: true
-        default: both
+        default: Chromium + Microsoft Edge
         options:
-          - chromium
-          - edge
-          - both
+          - Chromium
+          - Microsoft Edge
+          - Chromium + Microsoft Edge
 permissions:
   contents: read
 concurrency:
@@ -40,8 +44,8 @@ jobs:
       TEST_ENV: local
       TEST_WORKERS: '2'
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
-      TEST_SUITE: ${{ inputs.suite || 'regression-e2e' }}
-      TEST_BROWSER: ${{ inputs.browser || 'both' }}
+      TEST_SUITE: ${{ inputs.suite || 'Regression + E2E' }}
+      TEST_BROWSER: ${{ inputs.browser || 'Chromium + Microsoft Edge' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -56,27 +60,27 @@ jobs:
         run: npx playwright install --with-deps chromium msedge
       - name: Show selected test run
         run: |
-          echo "Suite: $TEST_SUITE"
-          echo "Browser: $TEST_BROWSER"
-          echo "Environment: $TEST_ENV"
-          echo "Workers: $TEST_WORKERS"
+          echo "Test suite: $TEST_SUITE"
+          echo "Browser project(s): $TEST_BROWSER"
+          echo "Target environment: $TEST_ENV"
+          echo "Parallel workers: $TEST_WORKERS"
       - name: Run selected suite and browser projects
         shell: bash
         run: |
           case "$TEST_SUITE" in
-            smoke) suite_args=(--grep '@smoke') ;;
-            sanity) suite_args=(--grep '@sanity') ;;
-            regression) suite_args=(--grep '@regression') ;;
-            e2e) suite_args=(--grep '@e2e') ;;
-            regression-e2e) suite_args=(--grep '@regression|@e2e') ;;
-            all) suite_args=() ;;
+            Smoke) suite_args=(--grep '@smoke') ;;
+            Sanity) suite_args=(--grep '@sanity') ;;
+            Regression) suite_args=(--grep '@regression') ;;
+            End-to-end) suite_args=(--grep '@e2e') ;;
+            'Regression + E2E') suite_args=(--grep '@regression|@e2e') ;;
+            'All suites') suite_args=() ;;
             *) echo "Unsupported suite: $TEST_SUITE"; exit 1 ;;
           esac
 
           case "$TEST_BROWSER" in
-            chromium) project_args=(--project=chromium) ;;
-            edge) project_args=(--project=edge) ;;
-            both) project_args=() ;;
+            Chromium) project_args=(--project=Chromium) ;;
+            'Microsoft Edge') project_args=(--project="Microsoft Edge") ;;
+            'Chromium + Microsoft Edge') project_args=() ;;
             *) echo "Unsupported browser selection: $TEST_BROWSER"; exit 1 ;;
           esac
 

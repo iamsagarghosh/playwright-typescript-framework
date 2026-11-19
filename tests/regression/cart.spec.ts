@@ -4,7 +4,7 @@ import { testData } from '../../src/data/testData';
 const { productName, unitPrice, doubleQuantitySubtotal } = testData.cart;
 
 test(
-  'guest can add and remove a product from the cart',
+  'Guest cart allows adding and removing a product',
   { tag: '@regression' },
   async ({ homePage }) => {
     await test.step('Add a product to the cart', async () => {
@@ -29,7 +29,7 @@ test(
 );
 
 test(
-  'guest can update the quantity of a cart item',
+  'Guest cart updates item quantity and subtotal',
   { tag: '@regression' },
   async ({ homePage }) => {
     await test.step('Add a product and increase its quantity', async () => {

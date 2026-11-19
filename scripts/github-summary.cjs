@@ -10,9 +10,49 @@ const runUrl =
   process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
     ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
     : undefined;
+const suiteLabels = {
+  smoke: 'Smoke',
+  sanity: 'Sanity',
+  regression: 'Regression',
+  e2e: 'End-to-end',
+  'regression-e2e': 'Regression + E2E',
+  'regression + e2e': 'Regression + E2E',
+  all: 'All suites',
+  'all suites': 'All suites',
+};
+const browserLabels = {
+  chromium: 'Chromium',
+  edge: 'Microsoft Edge',
+  'microsoft edge': 'Microsoft Edge',
+  both: 'Chromium + Microsoft Edge',
+  'all browsers': 'Chromium + Microsoft Edge',
+  'chromium + microsoft edge': 'Chromium + Microsoft Edge',
+};
+const environmentLabels = {
+  local: 'Leap & Leash demo',
+  qa: 'QA',
+  staging: 'Staging',
+  uat: 'UAT',
+};
+const eventLabels = {
+  schedule: 'Scheduled',
+  workflow_dispatch: 'Manual run',
+  push: 'Push',
+  pull_request: 'Pull request',
+};
+const resultLabels = {
+  success: 'Passed',
+  failure: 'Failed',
+  cancelled: 'Cancelled',
+};
 
 function formatCell(value) {
   return String(value).replace(/[|\r\n]/g, (character) => (character === '|' ? '\\|' : ' '));
+}
+
+function displayLabel(value, labels, fallback = 'Not specified') {
+  const key = String(value || '').toLowerCase();
+  return labels[key] || value || fallback;
 }
 
 function formatDuration(durationMs) {
@@ -52,15 +92,17 @@ function collectProjectCounts(suites, counts = new Map()) {
 
 function buildSummary() {
   const lines = [
-    '## Playwright run summary',
+    '## Playwright test run',
     '',
-    '| Selection | Value |',
+    '### Run details',
+    '',
+    '| Detail | Value |',
     '| --- | --- |',
-    `| Suite | ${process.env.TEST_SUITE || 'Not specified'} |`,
-    `| Browser project(s) | ${process.env.TEST_BROWSER || 'Not specified'} |`,
-    `| Environment | ${process.env.TEST_ENV || 'Not specified'} |`,
-    `| Workers | ${process.env.TEST_WORKERS || 'Not specified'} |`,
-    `| Job status | ${process.env.PLAYWRIGHT_JOB_STATUS || 'Unknown'} |`,
+    `| Test suites | ${formatCell(displayLabel(process.env.TEST_SUITE, suiteLabels))} |`,
+    `| Browsers | ${formatCell(displayLabel(process.env.TEST_BROWSER, browserLabels))} |`,
+    `| Environment | ${formatCell(displayLabel(process.env.TEST_ENV, environmentLabels))} |`,
+    `| Parallel workers | ${formatCell(process.env.TEST_WORKERS || 'Not specified')} |`,
+    `| Run result | ${formatCell(displayLabel(process.env.PLAYWRIGHT_JOB_STATUS, resultLabels, 'Unknown'))} |`,
   ];
 
   const runMetadata = [
@@ -71,7 +113,7 @@ function buildSummary() {
         ? `[${process.env.GITHUB_RUN_NUMBER}](${runUrl})`
         : undefined,
     ],
-    ['Event', process.env.GITHUB_EVENT_NAME],
+    ['Trigger', displayLabel(process.env.GITHUB_EVENT_NAME, eventLabels)],
     ['Branch', process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME],
     ['Commit', process.env.GITHUB_SHA?.slice(0, 7)],
   ];
@@ -97,15 +139,17 @@ function buildSummary() {
 
       const total = stats.expected + stats.unexpected + stats.flaky + stats.skipped;
       lines.push(
-        `**${total} tests reported** in ${formatDuration(stats.duration)}.`,
+        '### Test results',
+        '',
+        `**${total} test cases** completed in ${formatDuration(stats.duration)}.`,
         '',
         '| Passed | Failed | Flaky | Skipped | Total |',
         '| ---: | ---: | ---: | ---: | ---: |',
         `| ${stats.expected} | ${stats.unexpected} | ${stats.flaky} | ${stats.skipped} | ${total} |`,
         '',
-        '### Results by browser project',
+        '### Results by browser',
         '',
-        '| Project | Passed | Failed | Flaky | Skipped | Total |',
+        '| Browser | Passed | Failed | Flaky | Skipped | Total |',
         '| --- | ---: | ---: | ---: | ---: | ---: |',
       );
 
@@ -121,7 +165,7 @@ function buildSummary() {
     }
   }
 
-  lines.push('', '### Reports and diagnostics', '');
+  lines.push('', '### Reports and failure artifacts', '');
   if (artifactUrl) {
     lines.push(
       `[Download the Playwright report and diagnostics artifact](${artifactUrl})`,

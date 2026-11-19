@@ -9,12 +9,32 @@ const terminalReporters: ReporterDescription[] = isCI
 const machineReadableReporters: ReporterDescription[] = process.env.GITHUB_ACTIONS
   ? [['json', { outputFile: 'test-results/playwright-results.json' }]]
   : [];
+const suiteLabels: Record<string, string> = {
+  smoke: 'Smoke',
+  sanity: 'Sanity',
+  regression: 'Regression',
+  e2e: 'End-to-end',
+  'regression-e2e': 'Regression + E2E',
+  'regression + e2e': 'Regression + E2E',
+  all: 'All suites',
+  'all suites': 'All suites',
+};
+const browserLabels: Record<string, string> = {
+  chromium: 'Chromium',
+  edge: 'Microsoft Edge',
+  'microsoft edge': 'Microsoft Edge',
+  both: 'Chromium + Microsoft Edge',
+  'all browsers': 'Chromium + Microsoft Edge',
+  'chromium + microsoft edge': 'Chromium + Microsoft Edge',
+};
+const selectedSuite = process.env.TEST_SUITE?.toLowerCase() || 'all';
+const selectedBrowser = process.env.TEST_BROWSER?.toLowerCase() || 'both';
 const reportTitle = [
   'Playwright',
-  process.env.TEST_SUITE || 'all suites',
-  process.env.TEST_BROWSER || 'configured browser projects',
-  environment.name,
-  process.env.GITHUB_RUN_NUMBER ? `run #${process.env.GITHUB_RUN_NUMBER}` : 'local run',
+  suiteLabels[selectedSuite] ?? selectedSuite,
+  browserLabels[selectedBrowser] ?? selectedBrowser,
+  environment.name === 'local' ? 'Leap & Leash demo' : environment.name.toUpperCase(),
+  process.env.GITHUB_RUN_NUMBER ? `Run #${process.env.GITHUB_RUN_NUMBER}` : 'Local run',
 ].join(' | ');
 
 export default defineConfig({
@@ -44,11 +64,11 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'Chromium',
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'edge',
+      name: 'Microsoft Edge',
       use: { ...devices['Desktop Edge'], channel: 'msedge' },
     },
   ],

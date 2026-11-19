@@ -5,7 +5,7 @@ import { testData } from '../../src/data/testData';
 const { productName, totalWithShipping } = testData.cart;
 
 test(
-  'guest checkout validates required address fields',
+  'Checkout blocks progress when required address fields are missing',
   { tag: '@e2e' },
   async ({ homePage, logger }) => {
     await test.step('Open checkout with a product in the cart', async () => {
@@ -31,36 +31,32 @@ test(
   },
 );
 
-test(
-  'guest can complete a simulated demo checkout',
-  { tag: '@e2e' },
-  async ({ homePage, logger }) => {
-    const customer = createTestCustomerData();
+test('Guest completes a simulated demo checkout', { tag: '@e2e' }, async ({ homePage, logger }) => {
+  const customer = createTestCustomerData();
 
-    logger.info(`Starting a simulated guest checkout for "${productName}".`);
+  logger.info(`Starting a simulated guest checkout for "${productName}".`);
 
-    await test.step('Add the product and open checkout', async () => {
-      await homePage.goto();
-      await homePage.products.productCard(productName).openDetails();
-      await homePage.productDetails.addToCart();
-      await homePage.cart.goToCheckout();
-    });
+  await test.step('Add the product and open checkout', async () => {
+    await homePage.goto();
+    await homePage.products.productCard(productName).openDetails();
+    await homePage.productDetails.addToCart();
+    await homePage.cart.goToCheckout();
+  });
 
-    await test.step('Enter synthetic delivery details and review the order', async () => {
-      await homePage.checkout.fillAddress(customer);
-      await homePage.checkout.continueToPayment();
-      await homePage.checkout.selectDemoCard();
-      await homePage.checkout.reviewOrder();
+  await test.step('Enter synthetic delivery details and review the order', async () => {
+    await homePage.checkout.fillAddress(customer);
+    await homePage.checkout.continueToPayment();
+    await homePage.checkout.selectDemoCard();
+    await homePage.checkout.reviewOrder();
 
-      await expect(homePage.checkout.deliveryDetails).toContainText(customer.email);
-      await expect(
-        homePage.checkout.orderSummary.getByText(totalWithShipping, { exact: true }),
-      ).toBeVisible();
-    });
+    await expect(homePage.checkout.deliveryDetails).toContainText(customer.email);
+    await expect(
+      homePage.checkout.orderSummary.getByText(totalWithShipping, { exact: true }),
+    ).toBeVisible();
+  });
 
-    await test.step('Place the simulated demo order and verify confirmation', async () => {
-      await homePage.checkout.placeDemoOrder();
-      await expect(homePage.checkout.confirmationHeading).toBeVisible();
-    });
-  },
-);
+  await test.step('Place the simulated demo order and verify confirmation', async () => {
+    await homePage.checkout.placeDemoOrder();
+    await expect(homePage.checkout.confirmationHeading).toBeVisible();
+  });
+});

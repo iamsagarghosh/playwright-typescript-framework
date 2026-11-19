@@ -2,7 +2,7 @@ import { expect, test } from '../../src/fixtures/base.fixture';
 import { testData } from '../../src/data/testData';
 
 test(
-  'search shows the matching product',
+  'Search returns the matching product',
   { tag: ['@smoke', '@sanity'] },
   async ({ homePage, logger }) => {
     await test.step('Open the storefront', async () => {
@@ -27,7 +27,7 @@ test(
 );
 
 test(
-  'products navigation opens the product list',
+  'Products navigation opens the product list',
   { tag: ['@smoke', '@sanity'] },
   async ({ homePage, page }) => {
     await test.step('Open the storefront and navigate to Products', async () => {
@@ -42,7 +42,7 @@ test(
   },
 );
 
-test('product card opens product details', { tag: '@smoke' }, async ({ homePage }) => {
+test('Product card opens its details', { tag: '@smoke' }, async ({ homePage }) => {
   await test.step('Open the selected product details', async () => {
     await homePage.goto();
     await homePage.products.productCard('Tough Loop Rope Toy').openDetails();

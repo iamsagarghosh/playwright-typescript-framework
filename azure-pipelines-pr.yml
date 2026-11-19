@@ -11,6 +11,9 @@ pool:
 variables:
   CI: 'true'
   TEST_ENV: local
+  TEST_SUITE: Smoke
+  TEST_BROWSER: Chromium
+  TEST_WORKERS: '2'
 
 steps:
   - task: UseNode@1
@@ -34,7 +37,7 @@ steps:
   - script: npm run browsers:install
     displayName: Install Playwright Chromium
 
-  - script: npm run test:smoke -- --project=chromium --workers=2
+  - script: npm run test:smoke -- --project=Chromium --workers=2
     displayName: Run Chromium smoke tests
 
   - task: PublishTestResults@2

@@ -14,21 +14,21 @@ parameters:
   - name: browser
     displayName: Browser
     type: string
-    default: chromium
+    default: Chromium
     values:
-      - chromium
-      - edge
-      - all
+      - Chromium
+      - Microsoft Edge
+      - All browsers
   - name: suite
     displayName: Test suite
     type: string
-    default: smoke
+    default: Smoke
     values:
-      - smoke
-      - sanity
-      - regression
-      - e2e
-      - all
+      - Smoke
+      - Sanity
+      - Regression
+      - End-to-end
+      - All suites
 
 pool:
   vmImage: windows-latest
@@ -55,15 +55,15 @@ steps:
 
   - script: npm run browsers:install
     displayName: Install Playwright Chromium
-    condition: and(succeeded(), eq('${{ parameters.browser }}', 'chromium'))
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'Chromium'))
 
   - script: npm run browsers:install:edge
     displayName: Install Microsoft Edge
-    condition: and(succeeded(), eq('${{ parameters.browser }}', 'edge'))
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'Microsoft Edge'))
 
   - script: npm run browsers:install:all
     displayName: Install Playwright Chromium and Microsoft Edge
-    condition: and(succeeded(), eq('${{ parameters.browser }}', 'all'))
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'All browsers'))
 
   - task: PowerShell@2
     displayName: Run selected UI test suite
@@ -81,6 +81,9 @@ steps:
         }
 
         $env:TEST_ENV = $testEnvironment
+        $env:TEST_SUITE = $suite
+        $env:TEST_BROWSER = $browser
+        $env:TEST_WORKERS = '2'
         $env:BASE_URL = $baseUrl
         $env:ALLOWED_BASE_URL_HOSTS = $allowedBaseUrlHosts
 
@@ -99,12 +102,26 @@ steps:
 
         $playwrightArgs = @('scripts/playwright-cli.cjs', 'test')
 
-        if ($browser -ne 'all') {
-          $playwrightArgs += "--project=$browser"
+        if ($browser -ne 'All browsers') {
+          $projectName = switch ($browser) {
+            'Chromium' { 'Chromium' }
+            'Microsoft Edge' { 'Microsoft Edge' }
+            default { throw "Unsupported browser selection: $browser" }
+          }
+          $playwrightArgs += "--project=$projectName"
         }
 
-        if ($suite -ne 'all') {
-          $playwrightArgs += @('--grep', "@$suite")
+        $suiteTag = switch ($suite) {
+          'Smoke' { '@smoke' }
+          'Sanity' { '@sanity' }
+          'Regression' { '@regression' }
+          'End-to-end' { '@e2e' }
+          'All suites' { $null }
+          default { throw "Unsupported test suite: $suite" }
+        }
+
+        if ($suiteTag) {
+          $playwrightArgs += @('--grep', $suiteTag)
         }
 
         $playwrightArgs += '--workers=2'

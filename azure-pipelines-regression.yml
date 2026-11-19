@@ -15,6 +15,9 @@ pool:
 variables:
   CI: 'true'
   TEST_ENV: local
+  TEST_SUITE: Regression + E2E
+  TEST_BROWSER: Chromium + Microsoft Edge
+  TEST_WORKERS: '2'
 
 steps:
   - task: UseNode@1
@@ -30,7 +33,7 @@ steps:
     displayName: Install Playwright Chromium and Microsoft Edge
 
   - script: npm test -- --grep "@regression|@e2e" --workers=2
-    displayName: Run regression and critical E2E tests in Chromium and Edge
+    displayName: Run regression and critical E2E tests in Chromium and Microsoft Edge
 
   - task: PublishTestResults@2
     displayName: Publish JUnit test results
@@ -42,7 +45,7 @@ steps:
       mergeTestResults: true
       failTaskOnFailedTests: true
       failTaskOnMissingResultsFile: false
-      testRunTitle: Scheduled regression - Chromium and Edge - $(Build.BuildNumber)
+      testRunTitle: Scheduled regression - Chromium and Microsoft Edge - $(Build.BuildNumber)
 
   - task: PowerShell@2
     displayName: Stage Playwright reports and diagnostics

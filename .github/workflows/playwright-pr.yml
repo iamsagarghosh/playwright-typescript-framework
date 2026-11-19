@@ -17,8 +17,8 @@ jobs:
     env:
       CI: 'true'
       TEST_ENV: local
-      TEST_SUITE: smoke
-      TEST_BROWSER: chromium
+      TEST_SUITE: Smoke
+      TEST_BROWSER: Chromium
       TEST_WORKERS: '2'
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
     steps:
@@ -41,12 +41,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Show selected test run
         run: |
-          echo "Suite: $TEST_SUITE"
-          echo "Browser: $TEST_BROWSER"
-          echo "Environment: $TEST_ENV"
-          echo "Workers: $TEST_WORKERS"
+          echo "Test suite: $TEST_SUITE"
+          echo "Browser project(s): $TEST_BROWSER"
+          echo "Target environment: $TEST_ENV"
+          echo "Parallel workers: $TEST_WORKERS"
       - name: Run Chromium smoke suite
-        run: npm run test:smoke -- --project=chromium --workers=2
+        run: npm run test:smoke -- --project=Chromium --workers=2
       - name: Upload Playwright report and diagnostics
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
