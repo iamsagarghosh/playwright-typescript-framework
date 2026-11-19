@@ -11,7 +11,9 @@ export const test = base.extend<FrameworkFixtures>({
   homePage: async ({ page }, use) => {
     await use(new HomePage(page));
   },
-  logger: async (_fixtures, use, testInfo) => {
+  // Playwright requires a destructured first argument even when this fixture has no dependencies.
+  // eslint-disable-next-line no-empty-pattern
+  logger: async ({}, use, testInfo) => {
     const logger = new TestLogger(testInfo.title);
     await use(logger);
 
