@@ -6,6 +6,14 @@ const path = require('node:path');
 const reportPath = path.resolve('test-results/playwright-results.json');
 const summaryPath = process.env.GITHUB_STEP_SUMMARY;
 const artifactUrl = process.env.PLAYWRIGHT_ARTIFACT_URL;
+const runUrl =
+  process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
+    ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+    : undefined;
+
+function formatCell(value) {
+  return String(value).replace(/[|\r\n]/g, (character) => (character === '|' ? '\\|' : ' '));
+}
 
 function formatDuration(durationMs) {
   const totalSeconds = Math.floor(durationMs / 1000);
@@ -53,8 +61,28 @@ function buildSummary() {
     `| Environment | ${process.env.TEST_ENV || 'Not specified'} |`,
     `| Workers | ${process.env.TEST_WORKERS || 'Not specified'} |`,
     `| Job status | ${process.env.PLAYWRIGHT_JOB_STATUS || 'Unknown'} |`,
-    '',
   ];
+
+  const runMetadata = [
+    ['Workflow', process.env.GITHUB_WORKFLOW],
+    [
+      'Run',
+      process.env.GITHUB_RUN_NUMBER && runUrl
+        ? `[${process.env.GITHUB_RUN_NUMBER}](${runUrl})`
+        : undefined,
+    ],
+    ['Event', process.env.GITHUB_EVENT_NAME],
+    ['Branch', process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME],
+    ['Commit', process.env.GITHUB_SHA?.slice(0, 7)],
+  ];
+
+  for (const [label, value] of runMetadata) {
+    if (value) {
+      lines.push(`| ${label} | ${formatCell(value)} |`);
+    }
+  }
+
+  lines.push('');
 
   if (!fs.existsSync(reportPath)) {
     lines.push('Test counts are unavailable because Playwright did not produce a JSON report.');
@@ -95,15 +123,17 @@ function buildSummary() {
 
   lines.push('', '### Reports and diagnostics', '');
   if (artifactUrl) {
-    lines.push(`[Download the Playwright report and diagnostics artifact](${artifactUrl})`);
+    lines.push(
+      `[Download the Playwright report and diagnostics artifact](${artifactUrl})`,
+      '',
+      'The artifact contains the HTML report, JUnit XML, Playwright JSON results, and available failure diagnostics.',
+    );
   } else {
-    lines.push('No report artifact was uploaded for this run. Check the workflow log for details.');
+    lines.push(
+      'No report artifact link is available. Check the artifact upload step in the workflow log.',
+    );
   }
-  lines.push(
-    '',
-    'The artifact contains the HTML report, JUnit XML, Playwright JSON results, and available failure diagnostics.',
-    '',
-  );
+  lines.push('');
 
   return `${lines.join('\n')}\n`;
 }

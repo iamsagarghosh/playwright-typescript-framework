@@ -1,32 +1,55 @@
 import { expect, test } from '../../src/fixtures/base.fixture';
 import { testData } from '../../src/data/testData';
 
-test('search shows the matching product @smoke @sanity', async ({ homePage, logger }) => {
-  await homePage.goto();
-  await expect(homePage.heroHeading()).toBeVisible();
-  logger.info(`Searching the catalog for "${testData.productSearch.query}".`);
-  await homePage.search.searchFor(testData.productSearch.query);
+test(
+  'search shows the matching product',
+  { tag: ['@smoke', '@sanity'] },
+  async ({ homePage, logger }) => {
+    await test.step('Open the storefront', async () => {
+      await homePage.goto();
+      await expect(homePage.heroHeading()).toBeVisible();
+    });
 
-  await expect(
-    homePage.products.productCard(testData.productSearch.expectedProduct).locator,
-  ).toBeVisible();
-  await expect(
-    homePage.products.productCard(testData.productSearch.excludedProduct).locator,
-  ).toHaveCount(0);
-});
+    await test.step('Search the product catalog', async () => {
+      logger.info(`Searching the catalog for "${testData.productSearch.query}".`);
+      await homePage.search.searchFor(testData.productSearch.query);
+    });
 
-test('products navigation opens the product list @smoke @sanity', async ({ homePage, page }) => {
-  await homePage.goto();
-  await homePage.navigation.openProducts();
+    await test.step('Verify matching and excluded products', async () => {
+      await expect(
+        homePage.products.productCard(testData.productSearch.expectedProduct).locator,
+      ).toBeVisible();
+      await expect(
+        homePage.products.productCard(testData.productSearch.excludedProduct).locator,
+      ).toHaveCount(0);
+    });
+  },
+);
 
-  await expect(page).toHaveURL(/#products$/);
-  await expect(homePage.products.heading).toBeInViewport();
-});
+test(
+  'products navigation opens the product list',
+  { tag: ['@smoke', '@sanity'] },
+  async ({ homePage, page }) => {
+    await test.step('Open the storefront and navigate to Products', async () => {
+      await homePage.goto();
+      await homePage.navigation.openProducts();
+    });
 
-test('product card opens product details @smoke', async ({ homePage }) => {
-  await homePage.goto();
-  await homePage.products.productCard('Tough Loop Rope Toy').openDetails();
+    await test.step('Verify the product list is displayed', async () => {
+      await expect(page).toHaveURL(/#products$/);
+      await expect(homePage.products.heading).toBeInViewport();
+    });
+  },
+);
 
-  await expect(homePage.productDetails.title).toHaveText('Tough Loop Rope Toy');
-  await expect(homePage.productDetails.priceByText('$14.00')).toBeVisible();
+test('product card opens product details', { tag: '@smoke' }, async ({ homePage }) => {
+  await test.step('Open the selected product details', async () => {
+    await homePage.goto();
+    await homePage.products.productCard('Tough Loop Rope Toy').openDetails();
+  });
+
+  await test.step('Verify the product name and price', async () => {
+    await expect(homePage.productDetails.title).toHaveText('Tough Loop Rope Toy');
+    await expect(homePage.productDetails.priceByText('$14.00')).toBeVisible();
+  });
 });

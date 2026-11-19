@@ -9,6 +9,13 @@ const terminalReporters: ReporterDescription[] = isCI
 const machineReadableReporters: ReporterDescription[] = process.env.GITHUB_ACTIONS
   ? [['json', { outputFile: 'test-results/playwright-results.json' }]]
   : [];
+const reportTitle = [
+  'Playwright',
+  process.env.TEST_SUITE || 'all suites',
+  process.env.TEST_BROWSER || 'configured browser projects',
+  environment.name,
+  process.env.GITHUB_RUN_NUMBER ? `run #${process.env.GITHUB_RUN_NUMBER}` : 'local run',
+].join(' | ');
 
 export default defineConfig({
   testDir: './tests',
@@ -23,7 +30,7 @@ export default defineConfig({
   reporter: [
     ...terminalReporters,
     ...machineReadableReporters,
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['html', { outputFolder: 'playwright-report', open: 'never', title: reportTitle }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
   ],
   outputDir: 'test-results/artifacts',

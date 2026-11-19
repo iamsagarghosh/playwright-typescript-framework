@@ -76,8 +76,9 @@ each run under `playwright-report` and `test-results/junit.xml`.
 
 The console reporter depends on the execution environment. Local runs use Playwright's list
 reporter. CI runs use the GitHub reporter for failure annotations and the list reporter with test
-step output. The checkout workflow uses named `test.step()` sections so the major business actions
-are visible in console output, the HTML report, and traces.
+step output. Business-level `test.step()` sections make the user journey visible in console output,
+the HTML report, and traces. Suite tags are defined as Playwright metadata, so they remain available
+for filtering without cluttering test titles.
 
 Tests can use the custom `logger` fixture to record timestamped, test-scoped execution messages.
 Those messages are attached as `execution-log.txt` only when a test fails. Keep log entries focused
@@ -144,12 +145,14 @@ GitHub Actions workflows are available under `.github/workflows`:
 - `playwright-regression.yml` runs the regression and E2E suites daily in Chromium and Edge. It can also be started manually with a selected suite and browser project.
 
 Both workflows use the local Leap & Leash demo configuration, require no credentials, and upload
-the HTML report, JUnit results, and available failure diagnostics as workflow artifacts. Their
-console output includes the selected suite, browser, environment, worker count, per-test progress,
-test steps, and GitHub failure annotations. Each run also publishes a GitHub job summary with the
-suite and environment, total/passed/failed/flaky/skipped counts, browser-wise results, execution
-duration, and a direct artifact download link. The Playwright JSON report used to calculate counts
-is included in the artifact. These workflows are separate from the Azure Pipelines definitions;
+the HTML report, JUnit results, and available failure diagnostics as workflow artifacts. The HTML
+report title identifies the suite, selected browser project(s), environment, and GitHub run number.
+Console output includes the selected suite, browser, environment, worker count, per-test progress,
+test steps, and GitHub failure annotations. Each run also publishes a GitHub job summary with run
+link, workflow, event, branch, commit, suite and environment, total/passed/failed/flaky/skipped
+counts, browser-wise results, execution duration, and an artifact link when one is available. The
+Playwright JSON report used to calculate counts is included in the artifact. These workflows are
+separate from the Azure Pipelines definitions;
 adding them to Git does not run or configure Azure DevOps.
 
 Workflow actions are pinned to full commit SHAs. Dependabot checks the npm lockfile and GitHub
