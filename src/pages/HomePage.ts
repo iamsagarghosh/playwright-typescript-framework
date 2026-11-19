@@ -26,7 +26,7 @@ export class HomePage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('./');
+    await this.page.goto('./', { waitUntil: 'domcontentloaded' });
   }
 
   heroHeading(): Locator {
