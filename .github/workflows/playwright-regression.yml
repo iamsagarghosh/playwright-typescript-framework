@@ -76,7 +76,7 @@ jobs:
           npm test -- "${suite_args[@]}" "${project_args[@]}" --workers=2
       - name: Upload Playwright report and diagnostics
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-regression-${{ github.run_number }}
           path: |
