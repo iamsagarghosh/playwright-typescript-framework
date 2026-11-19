@@ -117,3 +117,12 @@ needs no credentials. No production or authentication workflow is configured.
 - M8: Native reporting and failure diagnostics
 - M9: Azure DevOps CI/CD
 - M10: Framework validation
+
+## GitHub Actions
+
+GitHub Actions workflows are available under `.github/workflows`:
+
+- `playwright-pr.yml` runs lint, formatting, TypeScript checks, and Chromium smoke tests on pushes to `main` and pull requests targeting `main`.
+- `playwright-regression.yml` runs the regression and E2E suites daily in Chromium and Edge. It can also be started manually with a selected suite and browser project.
+
+Both workflows use the local Leap & Leash demo configuration, require no credentials, and upload the HTML report, JUnit results, and available failure diagnostics as workflow artifacts. These workflows are separate from the Azure Pipelines definitions; adding them to Git does not run or configure Azure DevOps.
