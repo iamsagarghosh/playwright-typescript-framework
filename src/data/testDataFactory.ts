@@ -20,6 +20,7 @@ export function createTestCustomerData(): TestCustomerData {
     firstName,
     lastName,
     fullName: `${firstName} ${lastName}`,
+    // The reserved .test domain prevents generated addresses from reaching real mailboxes.
     email: `qa.${uniqueId}@example.test`,
     streetAddress: faker.location.streetAddress(),
     postalCode: faker.location.zipCode(),

@@ -1,9 +1,10 @@
 import { expect, test } from '../../src/fixtures/base.fixture';
 import { testData } from '../../src/data/testData';
 
-test('search shows the matching product @smoke @sanity', async ({ homePage }) => {
+test('search shows the matching product @smoke @sanity', async ({ homePage, logger }) => {
   await homePage.goto();
   await expect(homePage.heroHeading()).toBeVisible();
+  logger.info(`Searching the catalog for "${testData.productSearch.query}".`);
   await homePage.search.searchFor(testData.productSearch.query);
 
   await expect(

@@ -1,7 +1,11 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
 import { environment } from './src/config/environment';
 
 const isCI = Boolean(process.env.CI);
+// GitHub gets failure annotations and test-step output; local runs stay concise.
+const terminalReporters: ReporterDescription[] = isCI
+  ? [['github'], ['list', { printSteps: true }]]
+  : [['list']];
 
 export default defineConfig({
   testDir: './tests',
@@ -14,6 +18,7 @@ export default defineConfig({
     timeout: 5_000,
   },
   reporter: [
+    ...terminalReporters,
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
   ],
