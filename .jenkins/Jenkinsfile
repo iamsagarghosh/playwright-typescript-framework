@@ -123,6 +123,15 @@ pipeline {
   post {
     always {
       junit allowEmptyResults: true, testResults: 'test-results/junit.xml'
+      publishHTML(target: [
+        allowMissing: true,
+        alwaysLinkToLastBuild: true,
+        keepAll: true,
+        reportDir: 'playwright-report',
+        reportFiles: 'index.html',
+        reportName: 'Playwright HTML Report',
+        reportTitles: 'Playwright HTML Report',
+      ])
       archiveArtifacts allowEmptyArchive: true,
         artifacts: 'playwright-report/**,test-results/**',
         fingerprint: true
