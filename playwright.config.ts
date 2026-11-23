@@ -14,6 +14,7 @@ const suiteLabels: Record<string, string> = {
   sanity: 'Sanity',
   regression: 'Regression',
   e2e: 'End-to-end',
+  'end-to-end': 'End-to-end',
   'regression-e2e': 'Regression + E2E',
   'regression + e2e': 'Regression + E2E',
   all: 'All suites',
