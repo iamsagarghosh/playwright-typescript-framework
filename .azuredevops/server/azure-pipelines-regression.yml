@@ -1,0 +1,71 @@
+trigger: none
+
+schedules:
+  - cron: '0 20 * * *'
+    displayName: Nightly UI regression
+    branches:
+      include:
+        - main
+    always: true
+
+pool:
+  name: Default
+
+variables:
+  CI: 'true'
+  AZP_AGENT_CLEANUP_PSMODULES_IN_POWERSHELL: 'true'
+  TEST_ENV: local
+  TEST_SUITE: Regression + E2E
+  TEST_BROWSER: Chromium + Microsoft Edge
+  TEST_WORKERS: '2'
+
+steps:
+  - task: UseNode@1
+    displayName: Use Node.js 24 LTS
+    inputs:
+      versionSource: spec
+      version: 24.x
+
+  - script: npm ci
+    displayName: Install locked npm dependencies
+
+  - script: npm run browsers:install:all
+    displayName: Install Playwright Chromium and Microsoft Edge
+
+  - script: npm test -- --grep "@regression|@e2e" --workers=2
+    displayName: Run regression and critical E2E tests in Chromium and Microsoft Edge
+
+  - task: PublishTestResults@2
+    displayName: Publish JUnit test results
+    condition: always()
+    inputs:
+      testResultsFormat: JUnit
+      testResultsFiles: test-results/junit.xml
+      searchFolder: $(System.DefaultWorkingDirectory)
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+      failTaskOnMissingResultsFile: false
+      testRunTitle: Scheduled regression - Chromium and Microsoft Edge - $(Build.BuildNumber)
+
+  - task: PowerShell@2
+    displayName: Stage Playwright reports and diagnostics
+    condition: always()
+    inputs:
+      targetType: inline
+      script: |
+        $artifactRoot = Join-Path $env:BUILD_ARTIFACTSTAGINGDIRECTORY 'playwright'
+        New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
+
+        foreach ($source in @('playwright-report', 'test-results')) {
+          if (Test-Path $source) {
+            Copy-Item -Path $source -Destination $artifactRoot -Recurse -Force
+          }
+        }
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish HTML report and failure artifacts
+    condition: always()
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/playwright'
+      ArtifactName: scheduled-regression-diagnostics
+      publishLocation: Container

@@ -107,9 +107,10 @@ In GitHub Actions, inspect the job log for reporter annotations and test-step ou
 the `playwright-pr-*` or `playwright-regression-*` artifact for the HTML report, JUnit XML, traces,
 screenshots, videos, and any failure-only execution log.
 
-## Azure Pipelines definitions
+## Azure Pipelines (cloud)
 
-The repository contains pipeline YAML prepared for later Azure DevOps registration:
+The root `azure-pipelines-*.yml` files target Azure Pipelines cloud using Microsoft-hosted Windows
+agents and Azure Pipelines artifact publishing tasks:
 
 - `azure-pipelines-pr.yml`: GitHub pull request validation on `main`, with lint, formatting,
   TypeScript checks, Chromium smoke tests, JUnit results, and Playwright artifacts.
@@ -117,12 +118,17 @@ The repository contains pipeline YAML prepared for later Azure DevOps registrati
   (01:30 India Standard Time), with JUnit results and Playwright artifacts.
 - `azure-pipelines-manual.yml`: manually selected environment, browser, and suite.
 
-These files do not create or run Azure DevOps pipelines by themselves. The GitHub repository must be
-connected when the pipelines are registered. For QA, staging, or UAT manual runs, add the matching
+For QA, staging, or UAT manual runs, add the matching
 `playwright-qa`, `playwright-staging`, or `playwright-uat` variable group with an authorized
 `BASE_URL` and its exact hostname in `ALLOWED_BASE_URL_HOSTS`, and add the corresponding
 `test-data/<environment>.json` file. Local demo execution
 needs no credentials. No production or authentication workflow is configured.
+
+Azure DevOps Server uses separate YAML files under `.azuredevops/server/`, because Server requires
+a self-hosted agent pool and build artifact publishing tasks. Setup and registration instructions
+are in [Azure DevOps Server setup](docs/azure-devops-server.md). The GitHub and Azure repositories
+remain separate remotes; the planned synchronization direction is GitHub `main` to Azure Repos via
+reviewed pull requests, with Azure `main` protected by build validation.
 
 ## Milestones
 

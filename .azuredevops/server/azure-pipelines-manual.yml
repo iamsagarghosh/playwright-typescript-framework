@@ -1,0 +1,169 @@
+trigger: none
+
+parameters:
+  - name: testEnvironment
+    displayName: Test environment
+    type: string
+    default: local
+    values:
+      - local
+      - qa
+      - staging
+      - uat
+  - name: browser
+    displayName: Browser
+    type: string
+    default: Chromium
+    values:
+      - Chromium
+      - Microsoft Edge
+      - All browsers
+  - name: suite
+    displayName: Test suite
+    type: string
+    default: Smoke
+    values:
+      - Smoke
+      - Sanity
+      - Regression
+      - End-to-end
+      - All suites
+
+pool:
+  name: Default
+
+variables:
+  - name: CI
+    value: 'true'
+  - ${{ if eq(parameters.testEnvironment, 'qa') }}:
+      - group: playwright-qa
+  - ${{ if eq(parameters.testEnvironment, 'staging') }}:
+      - group: playwright-staging
+  - ${{ if eq(parameters.testEnvironment, 'uat') }}:
+      - group: playwright-uat
+
+steps:
+  - task: UseNode@1
+    displayName: Use Node.js 24 LTS
+    inputs:
+      versionSource: spec
+      version: 24.x
+
+  - script: npm ci
+    displayName: Install locked npm dependencies
+
+  - script: npm run browsers:install
+    displayName: Install Playwright Chromium
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'Chromium'))
+
+  - script: npm run browsers:install:edge
+    displayName: Install Microsoft Edge
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'Microsoft Edge'))
+
+  - script: npm run browsers:install:all
+    displayName: Install Playwright Chromium and Microsoft Edge
+    condition: and(succeeded(), eq('${{ parameters.browser }}', 'All browsers'))
+
+  - task: PowerShell@2
+    displayName: Run selected UI test suite
+    inputs:
+      targetType: inline
+      script: |
+        $testEnvironment = '${{ parameters.testEnvironment }}'
+        $browser = '${{ parameters.browser }}'
+        $suite = '${{ parameters.suite }}'
+        $baseUrl = $env:BASE_URL
+        $allowedBaseUrlHosts = $env:ALLOWED_BASE_URL_HOSTS
+
+        if ($baseUrl -match '^\$\([A-Za-z_][A-Za-z0-9_]*\)$') {
+          $baseUrl = ''
+        }
+
+        $env:TEST_ENV = $testEnvironment
+        $env:TEST_SUITE = $suite
+        $env:TEST_BROWSER = $browser
+        $env:TEST_WORKERS = '2'
+        $env:BASE_URL = $baseUrl
+        $env:ALLOWED_BASE_URL_HOSTS = $allowedBaseUrlHosts
+
+        $testDataPath = Join-Path 'test-data' "$testEnvironment.json"
+        if (-not (Test-Path -LiteralPath $testDataPath)) {
+          throw "Missing environment test data: $testDataPath. Add an approved dataset before running this environment."
+        }
+
+        if ($testEnvironment -ne 'local' -and [string]::IsNullOrWhiteSpace($baseUrl)) {
+          throw "Set BASE_URL in the playwright-$testEnvironment variable group before running this environment."
+        }
+
+        if ($testEnvironment -ne 'local' -and [string]::IsNullOrWhiteSpace($allowedBaseUrlHosts)) {
+          throw "Set ALLOWED_BASE_URL_HOSTS to the exact approved test hostname in the playwright-$testEnvironment variable group."
+        }
+
+        $playwrightArgs = @('scripts/playwright-cli.cjs', 'test')
+
+        if ($browser -ne 'All browsers') {
+          $projectName = switch ($browser) {
+            'Chromium' { 'Chromium' }
+            'Microsoft Edge' { 'Microsoft Edge' }
+            default { throw "Unsupported browser selection: $browser" }
+          }
+          $playwrightArgs += "--project=$projectName"
+        }
+
+        $suiteTag = switch ($suite) {
+          'Smoke' { '@smoke' }
+          'Sanity' { '@sanity' }
+          'Regression' { '@regression' }
+          'End-to-end' { '@e2e' }
+          'All suites' { $null }
+          default { throw "Unsupported test suite: $suite" }
+        }
+
+        if ($suiteTag) {
+          $playwrightArgs += @('--grep', $suiteTag)
+        }
+
+        $playwrightArgs += '--workers=2'
+        & node @playwrightArgs
+
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
+    env:
+      BASE_URL: $(BASE_URL)
+      ALLOWED_BASE_URL_HOSTS: $(ALLOWED_BASE_URL_HOSTS)
+
+  - task: PublishTestResults@2
+    displayName: Publish JUnit test results
+    condition: always()
+    inputs:
+      testResultsFormat: JUnit
+      testResultsFiles: test-results/junit.xml
+      searchFolder: $(System.DefaultWorkingDirectory)
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+      failTaskOnMissingResultsFile: false
+      testRunTitle: Manual UI run - ${{ parameters.testEnvironment }} - ${{ parameters.browser }} - $(Build.BuildNumber)
+
+  - task: PowerShell@2
+    displayName: Stage Playwright reports and diagnostics
+    condition: always()
+    inputs:
+      targetType: inline
+      script: |
+        $artifactRoot = Join-Path $env:BUILD_ARTIFACTSTAGINGDIRECTORY 'playwright'
+        New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
+
+        foreach ($source in @('playwright-report', 'test-results')) {
+          if (Test-Path $source) {
+            Copy-Item -Path $source -Destination $artifactRoot -Recurse -Force
+          }
+        }
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish HTML report and failure artifacts
+    condition: always()
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/playwright'
+      ArtifactName: manual-run-diagnostics
+      publishLocation: Container
