@@ -1,0 +1,131 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  parameters {
+    choice(
+      name: 'SUITE',
+      choices: ['Smoke', 'Sanity', 'Regression', 'End-to-end', 'All suites'],
+      description: 'Playwright suite to run against the local demo.',
+    )
+    choice(
+      name: 'BROWSER',
+      choices: ['Chromium', 'Microsoft Edge', 'Chromium + Microsoft Edge'],
+      description: 'Browser project or projects to execute.',
+    )
+    choice(
+      name: 'WORKERS',
+      choices: ['1', '2'],
+      description: 'Maximum Playwright workers for this run.',
+    )
+  }
+
+  environment {
+    CI = 'true'
+    TEST_ENV = 'local'
+  }
+
+  stages {
+    stage('Prepare workspace') {
+      steps {
+        script {
+          currentBuild.displayName = "#${env.BUILD_NUMBER} ${params.SUITE} - ${params.BROWSER}"
+          echo "Run: ${params.SUITE} | Browser: ${params.BROWSER} | Environment: Leap & Leash demo | Workers: ${params.WORKERS}"
+        }
+        bat '''
+          if exist playwright-report rmdir /s /q playwright-report
+          if exist test-results rmdir /s /q test-results
+        '''
+      }
+    }
+
+    stage('Check Windows tools') {
+      steps {
+        bat 'node --version'
+        bat 'npm --version'
+        bat 'git --version'
+      }
+    }
+
+    stage('Install locked dependencies') {
+      steps {
+        bat 'npm ci'
+      }
+    }
+
+    stage('Run code quality checks') {
+      steps {
+        bat 'npm run lint'
+        bat 'npm run format:check'
+        bat 'npm run typecheck'
+      }
+    }
+
+    stage('Install selected browser') {
+      steps {
+        script {
+          switch (params.BROWSER) {
+            case 'Chromium':
+              bat 'npm run browsers:install'
+              break
+            case 'Microsoft Edge':
+              bat 'npm run browsers:install:edge'
+              break
+            case 'Chromium + Microsoft Edge':
+              bat 'npm run browsers:install:all'
+              break
+            default:
+              error("Unsupported browser selection: ${params.BROWSER}")
+          }
+        }
+      }
+    }
+
+    stage('Run selected UI suite') {
+      steps {
+        script {
+          def suiteTags = [
+            'Smoke'       : '@smoke',
+            'Sanity'      : '@sanity',
+            'Regression'  : '@regression',
+            'End-to-end'  : '@e2e',
+            'All suites'  : null,
+          ]
+          def suiteTag = suiteTags[params.SUITE]
+          if (suiteTag == null && params.SUITE != 'All suites') {
+            error("Unsupported suite selection: ${params.SUITE}")
+          }
+
+          def playwrightArgs = []
+          if (suiteTag != null) {
+            playwrightArgs.add('--grep "' + suiteTag + '"')
+          }
+
+          if (params.BROWSER == 'Chromium') {
+            playwrightArgs.add('--project=Chromium')
+          } else if (params.BROWSER == 'Microsoft Edge') {
+            playwrightArgs.add('--project="Microsoft Edge"')
+          }
+          playwrightArgs.add("--workers=${params.WORKERS}")
+
+          withEnv(["TEST_SUITE=${params.SUITE}", "TEST_BROWSER=${params.BROWSER}"]) {
+            bat "npm test -- ${playwrightArgs.join(' ')}"
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      junit allowEmptyResults: true, testResults: 'test-results/junit.xml'
+      archiveArtifacts allowEmptyArchive: true,
+        artifacts: 'playwright-report/**,test-results/**',
+        fingerprint: true
+    }
+  }
+}

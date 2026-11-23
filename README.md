@@ -130,6 +130,15 @@ are in [Azure DevOps Server setup](docs/azure-devops-server.md). The GitHub and 
 remain separate remotes; the planned synchronization direction is GitHub `main` to Azure Repos via
 reviewed pull requests, with Azure `main` protected by build validation.
 
+## Jenkins (local Windows)
+
+The initial Jenkins Pipeline is maintained separately in `.jenkins/Jenkinsfile`. It runs manually
+on the Jenkins Built-In Node, targets the local Leap & Leash demo, and lets a run select its suite,
+browser project(s), and worker count. It publishes JUnit results and archives the Playwright HTML
+report and test diagnostics. Jenkins job setup and the later multibranch pull request path are
+documented in [Jenkins setup](docs/jenkins.md). No Jenkins schedule, webhook, or automatic GitHub
+trigger is configured yet.
+
 ## Milestones
 
 - M1: Windows environment verification
