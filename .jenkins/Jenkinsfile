@@ -112,7 +112,11 @@ pipeline {
           }
           playwrightArgs.add("--workers=${params.WORKERS}")
 
-          withEnv(["TEST_SUITE=${params.SUITE}", "TEST_BROWSER=${params.BROWSER}"]) {
+          withEnv([
+            "TEST_SUITE=${params.SUITE}",
+            "TEST_BROWSER=${params.BROWSER}",
+            "TEST_WORKERS=${params.WORKERS}"
+          ]) {
             bat "npm test -- ${playwrightArgs.join(' ')}"
           }
         }
