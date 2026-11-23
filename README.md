@@ -162,7 +162,9 @@ matching the local Windows development environment:
 
 Both workflows use the local Leap & Leash demo configuration, require no credentials, and upload
 the HTML report, JUnit results, and available failure diagnostics as workflow artifacts. The HTML
-report title identifies the suite, selected browser project(s), environment, and GitHub run number.
+report title identifies the suite, selected browser project(s), environment, and CI provider/build
+number. Its metadata includes available job, build URL, branch, commit, worker count, and Node.js
+version details.
 Test titles describe the user-visible outcome, while suite tags remain separate labels for filtering.
 Console output includes the selected suite, browser, environment, worker count, per-test progress,
 test steps, and GitHub failure annotations. Each run also publishes a GitHub job summary with run
